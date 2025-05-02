@@ -1,11 +1,40 @@
 using UnityEngine;
+using Cysharp.Threading.Tasks;
 
 public class Bootstrap : MonoBehaviour
 {
-    public static IUndoManager UndoManager { get; private set; }
+    [Header("Scene References")]
+    [SerializeField] private Canvas gameCanvas;
 
-    private void Awake()
+    private async void Awake()
     {
-        UndoManager = new UndoManager();
+        RegisterServices();
+        await InitializeGameAsync();
+    }
+
+    private void RegisterServices()
+    {
+        var undoManager = new UndoManager();
+        ServiceLocator.Register<IUndoManager>(undoManager);
+
+        GameObject uiManagerGO = new GameObject("UIManager");
+        var uiManager = uiManagerGO.AddComponent<UIManager>();
+        uiManager.Init(gameCanvas);
+        ServiceLocator.Register<IUIManager>(uiManager);
+
+        var gameInitializer = new GameInitializer(gameCanvas.transform);
+        ServiceLocator.Register<IGameInitializer>(gameInitializer);
+
+        var scoreManager = new ScoreManager();
+        ServiceLocator.Register<IScoreManager>(scoreManager);
+
+    }
+
+    private async UniTask InitializeGameAsync()
+    {
+        await ServiceLocator.Get<IGameInitializer>().InitializeAsync();
+
+        var gameplayData = new GameplayViewData(score: 0);
+        await ServiceLocator.Get<IUIManager>().Show(gameplayData);
     }
 }

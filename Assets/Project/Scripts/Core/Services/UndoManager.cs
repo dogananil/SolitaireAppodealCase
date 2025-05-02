@@ -15,6 +15,10 @@ public class UndoManager : IUndoManager
         {
             var move = _moveStack.Pop();
             move.Undo();
+
+            // Subtract score
+            ServiceLocator.Get<IScoreManager>().SubtractScore(1);
         }
     }
+
 }
